@@ -1,0 +1,20 @@
+(* ejemplo.yal - A simple arithmetic expression lexer *)
+
+let digit = ['0'-'9']
+let letter = ['a'-'z' 'A'-'Z']
+let id = letter (letter | digit)*
+let number = digit+
+let whitespace = [' ' '\t']+
+
+rule gettoken =
+    whitespace          { return None }
+  | ['\n']              { return ('EOL', lxm, line, col) }
+  | number              { return ('NUMBER', int(lxm), line, col) }
+  | id                  { return ('ID', lxm, line, col) }
+  | '+'                 { return ('PLUS', lxm, line, col) }
+  | '-'                 { return ('MINUS', lxm, line, col) }
+  | '*'                 { return ('TIMES', lxm, line, col) }
+  | '/'                 { return ('DIV', lxm, line, col) }
+  | '('                 { return ('LPAREN', lxm, line, col) }
+  | ')'                 { return ('RPAREN', lxm, line, col) }
+  | '='                 { return ('ASSIGN', lxm, line, col) }

@@ -1,0 +1,56 @@
+(* slr_lexer.yal - A more complete lexer for a simple programming language *)
+(* Demonstrates: let definitions, char ranges, escape sequences, negated classes *)
+
+{
+# Header: imports and setup for the generated lexer
+TOKEN_LIST = []
+}
+
+let digit = ['0'-'9']
+let letter = ['a'-'z' 'A'-'Z' '_']
+let id = letter (letter | digit)*
+let number = digit+
+let float_num = digit+ '.' digit+
+let whitespace = [' ' '\t' '\r']+
+let string_char = [^ '"' '\n' '\\']
+
+rule tokens =
+    whitespace                    { return None }
+  | ['\n']                        { return ('NEWLINE', lxm, line, col) }
+  | "//" [^ '\n']*               { return None }
+  | number                        { return ('INTEGER', int(lxm), line, col) }
+  | float_num                     { return ('FLOAT', float(lxm), line, col) }
+  | "if"                          { return ('IF', lxm, line, col) }
+  | "else"                        { return ('ELSE', lxm, line, col) }
+  | "while"                       { return ('WHILE', lxm, line, col) }
+  | "for"                         { return ('FOR', lxm, line, col) }
+  | "return"                      { return ('RETURN', lxm, line, col) }
+  | "def"                         { return ('DEF', lxm, line, col) }
+  | "print"                       { return ('PRINT', lxm, line, col) }
+  | "true"                        { return ('TRUE', lxm, line, col) }
+  | "false"                       { return ('FALSE', lxm, line, col) }
+  | id                            { return ('IDENTIFIER', lxm, line, col) }
+  | '+'                           { return ('PLUS', lxm, line, col) }
+  | '-'                           { return ('MINUS', lxm, line, col) }
+  | '*'                           { return ('TIMES', lxm, line, col) }
+  | '/'                           { return ('DIVIDE', lxm, line, col) }
+  | '%'                           { return ('MOD', lxm, line, col) }
+  | '='                           { return ('ASSIGN', lxm, line, col) }
+  | "=="                          { return ('EQ', lxm, line, col) }
+  | "!="                          { return ('NEQ', lxm, line, col) }
+  | '<'                           { return ('LT', lxm, line, col) }
+  | '>'                           { return ('GT', lxm, line, col) }
+  | "<="                          { return ('LTE', lxm, line, col) }
+  | ">="                          { return ('GTE', lxm, line, col) }
+  | "&&"                          { return ('AND', lxm, line, col) }
+  | "||"                          { return ('OR', lxm, line, col) }
+  | '!'                           { return ('NOT', lxm, line, col) }
+  | '('                           { return ('LPAREN', lxm, line, col) }
+  | ')'                           { return ('RPAREN', lxm, line, col) }
+  | '{'                           { return ('LBRACE', lxm, line, col) }
+  | '}'                           { return ('RBRACE', lxm, line, col) }
+  | '['                           { return ('LBRACKET', lxm, line, col) }
+  | ']'                           { return ('RBRACKET', lxm, line, col) }
+  | ','                           { return ('COMMA', lxm, line, col) }
+  | ';'                           { return ('SEMICOLON', lxm, line, col) }
+  | ':'                           { return ('COLON', lxm, line, col) }
