@@ -4,6 +4,8 @@ Generador de analizadores léxicos que lee especificaciones `.yal` (sintaxis ins
 
 **Repositorio:** [github.com/lfmendoza/lexer-generator](https://github.com/lfmendoza/lexer-generator)
 
+**Guion de presentación (exposición en clase):** [docs/PRESENTACION.md](docs/PRESENTACION.md)
+
 ## Configuración del entorno
 
 Resumen rápido: instala **Python 3.10+** y **Git**, clona el repositorio, crea un entorno virtual (`.venv`), ejecuta `pip install -e ".[dev]"` y comprueba con `pytest`. El proyecto solo añade dependencias de desarrollo en `[dev]`; el generador y el código que emite usan la biblioteca estándar de Python.
@@ -280,7 +282,11 @@ Hay que separar **dos niveles**:
 3. Al final suele aparecer una línea con el **conteo** de tokens no nulos.
 4. Los tokens con `return None` (p. ej. espacios) **no** se listan como líneas sueltas; solo cuentan a efectos de “limpiar” el texto.
 
-Si necesitas **traza por token** al analizar, puedes temporalmente cambiar una acción a `print(...)` antes del `return`, o procesar el resultado en Python importando la clase `Lexer` del archivo generado (misma biblioteca estándar).
+El lexer generado acepta **`--pretty`**: además de la tabla de tuplas, imprime una **vista léxica** por línea: el texto fuente y la secuencia de **tipos** como en `ID + ID` (validación visual de que el contenido se clasifica como esperas).
+
+```bash
+python my_lexer.py samples/inputs/arithmetic_expressions.txt --pretty
+```
 
 ---
 
@@ -308,7 +314,7 @@ python imp_lexer.py samples/inputs/imperative_core_sample.txt
 python my_lexer.py samples/inputs/arithmetic_expressions.txt
 ```
 
-Salida típica:
+**Salida típica** (tabla de tuplas):
 
 ```
 === TOKENS ===
@@ -319,6 +325,14 @@ Salida típica:
 ('NUMBER', 42, 1, 9)
 ...
 ```
+
+**Vista alineada tipos ↔ texto** (misma entrada, flag `--pretty`):
+
+```bash
+python my_lexer.py samples/inputs/arithmetic_expressions.txt --pretty
+```
+
+Tras la tabla, el generador incluye una sección `=== Vista léxica ===` con, por cada línea: el **texto**, la cadena de **tipos** (`ID ASSIGN NUMBER …`) y el **detalle** con valores. Así puedes comprobar de un vistazo que, por ejemplo, `x + y` se lee como `ID PLUS ID` y no solo como filas sueltas en la tabla.
 
 ### 3. Convertir DOT a PNG (opcional)
 

@@ -162,12 +162,53 @@ class Lexer:
         return None
 
 
-def main():
-    if len(sys.argv) < 2:
-        print("Usage: python {{sys.argv[0]}} <input_file>", file=sys.stderr)
-        sys.exit(1)
+def _lexical_alignment_view(text, tokens_list):
+    """Muestra cada línea del fuente y la secuencia de tipos de token (p. ej. ID + ID)."""
+    lines = text.splitlines()
+    usable = [
+        t
+        for t in tokens_list
+        if t is not None and isinstance(t, tuple) and len(t) >= 4
+    ]
+    if not usable:
+        print(
+            "(Vista léxica: no hay tokens con forma (tipo, valor, línea, columna).)",
+            file=sys.stderr,
+        )
+        return
+    by_line = {{}}
+    for t in usable:
+        by_line.setdefault(t[2], []).append(t)
+    print("=== Vista léxica (texto y tipos alineados) ===")
+    for ln in sorted(by_line.keys()):
+        ts = sorted(by_line[ln], key=lambda t: t[3])
+        src = lines[ln - 1] if 1 <= ln <= len(lines) else ""
+        seq = " ".join(str(t[0]) for t in ts)
+        detail_parts = []
+        for t in ts:
+            detail_parts.append(str(t[0]) + "(" + repr(t[1]) + ")")
+        detail = " ".join(detail_parts)
+        print("--- Línea %s ---" % (ln,))
+        print("Texto:   " + repr(src))
+        print("Tipos:   " + seq)
+        print("Detalle: " + detail)
 
-    with open(sys.argv[1], 'r', encoding='utf-8') as f:
+
+def main():
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Lexer generado por YALex")
+    parser.add_argument("input", help="Archivo de entrada")
+    parser.add_argument(
+        "--pretty",
+        action="store_true",
+        help=(
+            "Tras la tabla, muestra por línea el texto y la secuencia de tipos (p. ej. ID + ID)"
+        ),
+    )
+    args = parser.parse_args()
+
+    with open(args.input, encoding="utf-8") as f:
         text = f.read()
 
     lexer = Lexer(text)
@@ -178,6 +219,9 @@ def main():
         if tok is not None:
             print(tok)
     print(f"=== {{len([t for t in tokens if t is not None])}} tokens found ===")
+    if args.pretty:
+        print()
+        _lexical_alignment_view(text, tokens)
 
 
 if __name__ == "__main__":
