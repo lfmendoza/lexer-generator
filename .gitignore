@@ -51,3 +51,10 @@ Desktop.ini
 .env
 .env.*
 !.env.example
+
+# YALex — salida del generador (`yalex archivo.yal -o prefijo`)
+# prefijo_lexer.py, prefijo_lexer_trees/, prefijo_dfa.dot; PNG si conviertes con `dot`
+*_lexer.py
+*_lexer_trees/
+*_dfa.dot
+*_dfa.png

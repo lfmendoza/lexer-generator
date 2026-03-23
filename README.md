@@ -322,12 +322,26 @@ Salida típica:
 
 ### 3. Convertir DOT a PNG (opcional)
 
-Si tienes [Graphviz](https://graphviz.org/):
+Necesitas el programa **`dot`**, incluido en [Graphviz](https://graphviz.org/) (no forma parte de Python ni de YALex).
 
 ```bash
 dot -Tpng my_lexer_dfa.dot -o my_lexer_dfa.png
 dot -Tpng my_lexer_trees/combined.dot -o combined_tree.png
 ```
+
+**Si aparece `dot: command not found` (o equivalente):** Graphviz no está instalado o la carpeta del ejecutable no está en el `PATH`.
+
+| Sistema | Cómo instalar (ejemplos) | Después |
+|---------|---------------------------|---------|
+| **Windows** | Instalador desde [graphviz.org](https://graphviz.org/download/) (marca “Add to PATH”), o `winget install Graphviz.Graphviz` | Cierra y abre la terminal; en PowerShell: `dot -V` |
+| **macOS** | `brew install graphviz` | `dot -V` |
+| **Debian/Ubuntu** | `sudo apt install graphviz` | `dot -V` |
+| **Fedora** | `sudo dnf install graphviz` | `dot -V` |
+| **Arch** | `sudo pacman -S graphviz` | `dot -V` |
+
+En **Git Bash** bajo Windows, si instalaste Graphviz pero sigue sin encontrarse, reinicia la terminal o añade manualmente la ruta típica `C:\Program Files\Graphviz\bin` a las variables de entorno del sistema.
+
+Los archivos `.dot` siguen siendo **texto**: puedes abrirlos en un editor o subirlos a [edotor.net](https://edotor.net/) u otro visor online si no quieres instalar Graphviz.
 
 ---
 
