@@ -215,44 +215,100 @@ tests/
 
 Tras [configurar el entorno](#configuración-del-entorno), ejecuta: `yalex`, `python -m yalex` o `python yalex_cli.py`.
 
-## Funcionamiento
+## Cómo funciona YALex (visión general)
 
-La canalización sigue la teoría habitual de construcción de compiladores:
+Hay **dos programas distintos** y **dos fases** en el flujo de trabajo habitual:
 
-1. **Análisis del `.yal`** — cabecera, definiciones `let`, patrones y acciones de `rule`, y cola (trailer)
-2. **Análisis de cada regex** — la sintaxis regex de YALex se convierte en un AST
-3. **Construcción de AFN** — construcción de Thompson por cada patrón de regla
-4. **AFN unificado** — se enlazan los AFN de las reglas con transiciones épsilon desde un super-estado inicial
-5. **Conversión a AFD** — construcción por subconjuntos
-6. **Minimización del AFD** — refinamiento de particiones (estilo Hopcroft)
-7. **Generación del lexer** — archivo Python con la tabla de transiciones del AFD
-8. **Visualización** — archivos DOT (Graphviz) para árboles de expresiones y el AFD
+| Fase | Herramienta | Entrada | Salida principal |
+|------|-------------|---------|------------------|
+| **1** | `yalex` (este repositorio) | Archivo `.yal` | **Lexer en Python** (`*.py`) + opcionalmente DOT (árboles, AFD) |
+| **2** | El **lexer generado** (`python mi_lexer.py …`) | Archivo de texto de tu lenguaje | **Lista de tokens** impresa en consola |
 
-## Uso
+```mermaid
+flowchart TB
+  subgraph fase1 [Fase 1: generar el analizador léxico]
+    yal[spec.yal]
+    yalex[yalex]
+    py[mi_lexer.py]
+    dot[DOT opcional]
+    yal --> yalex
+    yalex --> py
+    yalex --> dot
+  end
+  subgraph fase2 [Fase 2: analizar texto fuente]
+    txt[entrada.txt]
+    run[python mi_lexer.py]
+    out["=== TOKENS === ..."]
+    txt --> run
+    run --> out
+  end
+  py -.->|ejecutas el generado| run
+```
 
-### Paso 1: generar un lexer a partir de un `.yal`
+**Fase 1 (compilación del lexer)** — internamente, `yalex` aplica la teoría habitual de compiladores:
+
+1. Lee el `.yal` (cabecera, `let`, reglas `rule`, trailer).
+2. Parsea cada regex a un AST.
+3. Construye AFN (Thompson), los une, obtiene AFD (subconjuntos), minimiza (Hopcroft).
+4. Escribe un `.py` con tablas del AFD y el código de acciones que definiste.
+5. Opcionalmente escribe **DOT** para visualizar árboles de regex y el AFD.
+
+**Fase 2 (ejecución)** — el `.py` generado recorre el texto con el AFD (prefijo más largo) y ejecuta la **acción** de la regla que gana: lo que devuelvas (`return …`) es lo que **aparece como token** en la salida (salvo `None`, que se omite).
+
+---
+
+## ¿Valida el programa que el texto “cumple” la especificación?
+
+Hay que separar **dos niveles**:
+
+| Nivel | Qué comprueba | Quién lo hace |
+|-------|----------------|---------------|
+| **Léxico** | ¿Cada trozo del texto se puede clasificar como uno de los patrones del `.yal` (o ignorar como espacio/comentario según reglas)? | El **lexer generado** |
+| **Sintáctico / semántico** | ¿La secuencia de tokens forma frases válidas del lenguaje (gramática BNF, tipos, etc.)? | **No** lo hace YALex; corresponde a un **parser** u otra herramienta |
+
+- **Sí** puedes comprobar si el texto **encaja a nivel léxico** con la especificación: ejecutas el lexer generado y observas si aparecen **errores léxicos** (caracteres que no inician ningún token reconocido) o solo tokens esperados.
+- **No** el generador `yalex` no “valida” un archivo de entrada por sí mismo: solo **genera** el programa que leerá ese archivo más tarde.
+
+**Estructura que obtienes al pasar el input por el lexer generado:** una **secuencia de tokens** en orden de lectura. Cada línea bajo `=== TOKENS ===` es una tupla que tú defines en las acciones `{ return … }`; lo habitual es algo como `(tipo, valor, línea, columna)` o `None` para ignorar (p. ej. espacios).
+
+---
+
+## Formato de salida: leer la lista de tokens
+
+1. El script generado imprime un encabezado `=== TOKENS ===`.
+2. Cada token es una tupla (el **contenido** depende de lo que pongas en `return` en el `.yal`).
+3. Al final suele aparecer una línea con el **conteo** de tokens no nulos.
+4. Los tokens con `return None` (p. ej. espacios) **no** se listan como líneas sueltas; solo cuentan a efectos de “limpiar” el texto.
+
+Si necesitas **traza por token** al analizar, puedes temporalmente cambiar una acción a `print(...)` antes del `return`, o procesar el resultado en Python importando la clase `Lexer` del archivo generado (misma biblioteca estándar).
+
+---
+
+## Uso paso a paso
+
+### 1. Generar el lexer desde `.yal`
 
 ```bash
 yalex specs/yal/arithmetic_expression.yal -o my_lexer
-# o: python yalex_cli.py specs/yal/arithmetic_expression.yal -o my_lexer
+# equivalente: python yalex_cli.py specs/yal/arithmetic_expression.yal -o my_lexer
 ```
 
-Se generan `my_lexer.py`, `my_lexer_trees/` (DOT de los árboles de regex) y `my_lexer_dfa.dot`.
+Genera `my_lexer.py`, carpeta `my_lexer_trees/` (DOT de árboles de regex) y `my_lexer_dfa.dot` (salvo que uses `--no-trees` / `--no-dfa-graph`).
 
-Segundo ejemplo (lenguaje imperativo):
+**Otro ejemplo** (lenguaje imperativo más grande):
 
 ```bash
 yalex specs/yal/imperative_core.yal -o imp_lexer
 python imp_lexer.py samples/inputs/imperative_core_sample.txt
 ```
 
-### Paso 2: ejecutar el lexer generado
+### 2. Ejecutar el lexer sobre tu texto
 
 ```bash
 python my_lexer.py samples/inputs/arithmetic_expressions.txt
 ```
 
-Salida de ejemplo:
+Salida típica:
 
 ```
 === TOKENS ===
@@ -264,25 +320,75 @@ Salida de ejemplo:
 ...
 ```
 
-### Opcional: convertir DOT a imágenes
+### 3. Convertir DOT a PNG (opcional)
 
-Si tienes Graphviz instalado:
+Si tienes [Graphviz](https://graphviz.org/):
 
 ```bash
 dot -Tpng my_lexer_dfa.dot -o my_lexer_dfa.png
 dot -Tpng my_lexer_trees/combined.dot -o combined_tree.png
 ```
 
-## Opciones de línea de comandos
+---
+
+## Trazas y depuración detallada
+
+### Durante `yalex` (compilación del lexer)
+
+Aquí **sí** hay trazas estructuradas del **pipeline de generación**:
+
+| Mecanismo | Qué muestra |
+|-----------|-------------|
+| **Salida por defecto** | Resumen: definiciones, reglas, pasos “Building NFA…”, tamaño del AFD, rutas generadas. |
+| **`-v` / `--verbose`** | Más mensajes de registro (`logging`) del proceso. |
+| **`-q` / `--quiet`** | Oculta parte del ruido y líneas `[INFO]` de archivos generados. |
+| **`--trace human`** | Líneas `[trace] EVENTO clave=valor ...` con hitos del pipeline (ver tabla siguiente). |
+| **`--trace json`** | Una línea JSON por evento (útil para scripts o `jq`). |
+| **`--trace off`** | Desactiva trazas estructuradas (por defecto). |
+
+**Eventos que se registran en la traza** (compilación):
+
+| Evento | Información útil (ejemplos) |
+|--------|------------------------------|
+| `SPEC_PARSED` | Número de `let`, reglas, nombre del punto de entrada (`entrypoint`). |
+| `TREES_EMITTED` | Directorio donde quedaron los DOT de árboles (si no usaste `--no-trees`). |
+| `DFA_MINIMIZED` | Número de estados del AFD tras minimizar. |
+| `DFA_DOT_WRITTEN` | Ruta del `.dot` del AFD (si no usaste `--no-dfa-graph`). |
+| `CODE_WRITTEN` | Ruta del `.py` del lexer generado. |
+
+**Ejemplo de comando con traza legible:**
+
+```bash
+yalex specs/yal/arithmetic_expression.yal -o my_lexer --trace human
+```
+
+**Ejemplo en JSON** (una línea por evento):
+
+```bash
+yalex specs/yal/arithmetic_expression.yal -o my_lexer --trace json
+```
+
+### Durante el lexer generado (tu texto de entrada)
+
+El **`.py` generado** no incluye un modo `--trace` integrado: la “traza” práctica es la **lista impresa de tokens** (`=== TOKENS ===`). Para depuración fina puedes:
+
+- Añadir `print(...)` en las acciones del `.yal` y **volver a generar** el lexer, o
+- Usar el lexer como clase desde Python y recorrer los resultados en código.
+
+---
+
+## Opciones de línea de comandos (`yalex`)
 
 | Opción | Descripción |
-|--------|---------------|
+|--------|-------------|
 | `-o NOMBRE` | Prefijo de salida (sin extensión `.py`) |
 | `--no-trees` | No generar DOT de árboles de expresiones |
 | `--no-dfa-graph` | No generar el diagrama DOT del AFD |
-| `-v` / `--verbose` | Registro detallado |
+| `-v` / `--verbose` | Registro más detallado (logging) durante la generación |
 | `-q` / `--quiet` | Salida mínima (oculta líneas `[INFO]` de codegen/DOT) |
-| `--trace human` / `json` / `off` | Trazas del pipeline (por defecto: `off`) |
+| `--trace human` | Trazas `[trace]` legibles durante la **compilación** del lexer |
+| `--trace json` | Trazas en JSON (una línea por evento) |
+| `--trace off` | Sin trazas estructuradas (por defecto) |
 
 ## Referencia de sintaxis YALex
 
@@ -340,13 +446,12 @@ Las acciones son bloques de código Python entre `{ }`. Variables disponibles:
 
 Devolver `None` omite el token (p. ej. espacios). Cualquier otro valor se emite como token.
 
-## Comportamiento
+## Comportamiento (resumen)
 
-Canalización: AST de regex → AFN (Thompson) → AFN combinado → AFD (subconjuntos) → minimización (Hopcroft) → lexer emitido. La coincidencia es de **prefijo más largo**; a igual longitud, gana la regla que aparece antes en la especificación.
-
-Evite el nombre de regla `tokens` como punto de entrada (`rule tokens =`): en el código generado entra en conflicto con el atributo `Lexer.tokens` (lista). Use por ejemplo `gettoken`, `tokenize`, etc.
-
-El proyecto y el código que genera YALex solo usan la biblioteca estándar de Python.
+- **Compilación (`yalex`):** ver la lista numerada en [Cómo funciona YALex](#cómo-funciona-yalex-visión-general) y las trazas en [Trazas y depuración detallada](#trazas-y-depuración-detallada).
+- **Análisis de texto:** el lexer emitido aplica **prefijo más largo**; si dos reglas empatan en longitud, gana la que **aparece antes** en el `rule … =`.
+- **Nombre del punto de entrada:** no use `rule tokens =` como entrada principal: en el código generado choca con el atributo `Lexer.tokens` (lista). Prefiera `gettoken`, `tokenize`, etc.
+- **Dependencias:** solo biblioteca estándar de Python en este proyecto y en el código que genera YALex.
 
 ## Requisitos
 
