@@ -6,99 +6,197 @@ Generador de analizadores léxicos que lee especificaciones `.yal` (sintaxis ins
 
 ## Configuración del entorno
 
-Requisitos comunes: **Python 3.10 o superior** y **Git** (para clonar el repositorio). El proyecto no usa dependencias externas en tiempo de ejecución; solo herramientas de desarrollo en el extra `[dev]`.
+Resumen rápido: instala **Python 3.10+** y **Git**, clona el repositorio, crea un entorno virtual (`.venv`), ejecuta `pip install -e ".[dev]"` y comprueba con `pytest`. El proyecto solo añade dependencias de desarrollo en `[dev]`; el generador y el código que emite usan la biblioteca estándar de Python.
 
-### Obtener el código
+| Sección | Contenido |
+|---------|-----------|
+| [Requisitos previos](#requisitos-previos) | Qué instalar antes de empezar |
+| [Clonar el repositorio](#clonar-el-repositorio) | `git clone` |
+| [Windows](#windows) | PowerShell, CMD y Git Bash |
+| [macOS](#macos) | Terminal y Homebrew |
+| [Linux](#linux) | Debian/Ubuntu, Fedora, Arch |
+| [Comprobar la instalación](#comprobar-la-instalación) | Pruebas y herramientas opcionales |
+
+### Requisitos previos
+
+- **Python** 3.10 o superior ([Windows](https://www.python.org/downloads/windows/) · [macOS](https://www.python.org/downloads/macos/) · Linux: gestor de paquetes de la distro).
+- **Git**, para clonar [el repositorio](https://github.com/lfmendoza/lexer-generator).
+
+En Windows, al instalar Python desde el instalador oficial, marca **Add python.exe to PATH**. También puedes usar `winget install Python.Python.3.12`.
+
+### Clonar el repositorio
 
 ```bash
 git clone https://github.com/lfmendoza/lexer-generator.git
 cd lexer-generator
 ```
 
-Instrucciones por plataforma: **Windows**, **macOS**, **Linux** (Debian/Ubuntu, Fedora y Arch).
+A partir de aquí, todos los comandos se ejecutan **dentro** de la carpeta `lexer-generator` (raíz del proyecto).
+
+---
 
 ### Windows
 
-1. Instala Python desde [python.org](https://www.python.org/downloads/) (marca “Add python.exe to PATH”) o con `winget install Python.Python.3.12`.
-2. Abre una terminal (PowerShell o **cmd**) en la carpeta del proyecto.
-3. Crea y activa un entorno virtual:
+Instala Python si aún no lo tienes (véase [Requisitos previos](#requisitos-previos)). Luego elige **una** terminal; los tres métodos crean el mismo entorno virtual (`.venv`); solo cambia la forma de activarlo.
+
+#### PowerShell (recomendado)
+
+1. Abre **Windows Terminal → PowerShell** o busca “PowerShell” en el menú Inicio.
+2. Ve al directorio del clon (ajusta la ruta):
+
+   ```powershell
+   cd C:\ruta\a\lexer-generator
+   ```
+
+3. Crea y activa el entorno virtual:
 
    ```powershell
    py -3 -m venv .venv
-   .venv\Scripts\activate
+   .\.venv\Scripts\Activate.ps1
    ```
 
-4. Actualiza pip e instala el proyecto en modo editable:
+   Si aparece un error de **política de ejecución** (`running scripts is disabled`), ejecuta una vez en PowerShell **como administrador**:
+
+   ```powershell
+   Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+   ```
+
+   Cierra y vuelve a abrir la terminal, luego repite el paso 3.
+
+4. Instala el proyecto:
 
    ```powershell
    python -m pip install -U pip
    pip install -e ".[dev]"
    ```
 
-5. Comprueba la instalación: `yalex --help` o `python -m yalex --help`. Sin activar el venv también puedes usar `python yalex_cli.py --help` (añade `src/` al path automáticamente).
+#### Símbolo del sistema (CMD)
 
-6. **Graphviz** (opcional, para convertir `.dot` a PNG): [Instalador](https://graphviz.org/download/) o `winget install Graphviz.Graphviz`. Asegúrate de que `dot` esté en el `PATH`.
+1. Abre **cmd** (`Win + R` → `cmd` → Intro).
+2. Cambia al directorio del proyecto:
 
-7. **Make** no viene por defecto; para `make check` usa [Git for Windows](https://git-scm.com/) (incluye Git Bash con `make` en algunos entornos), [Chocolatey](https://chocolatey.org/) (`choco install make`), o ejecuta a mano los comandos indicados en [Desarrollo](#desarrollo).
+   ```cmd
+   cd /d C:\ruta\a\lexer-generator
+   ```
+
+3. Entorno virtual e instalación:
+
+   ```cmd
+   py -3 -m venv .venv
+   .venv\Scripts\activate.bat
+   python -m pip install -U pip
+   pip install -e ".[dev]"
+   ```
+
+#### Git Bash
+
+Útil si ya usas [Git for Windows](https://git-scm.com/download/win). Las rutas siguen el estilo Unix (`/c/Users/...`).
+
+1. Abre **Git Bash**.
+2. Ve al repositorio y activa el entorno (Git Bash usa `Scripts/activate` sin extensión):
+
+   ```bash
+   cd /c/ruta/a/lexer-generator
+   py -3 -m venv .venv
+   source .venv/Scripts/activate
+   python -m pip install -U pip
+   pip install -e ".[dev]"
+   ```
+
+   Si `py` no existe, prueba `python` o `python3` según lo que tengas en PATH.
+
+#### Windows: comprobar y herramientas opcionales
+
+- Comprueba la CLI: `yalex --help`, `python -m yalex --help`, o sin venv: `python yalex_cli.py --help`.
+- **Graphviz** (opcional, para PNG desde `.dot`): [instalador](https://graphviz.org/download/) o `winget install Graphviz.Graphviz`; comprueba que `dot` esté en el PATH.
+- **Make** no viene con Windows. Para los mismos pasos que `make check`, usa la sección [Desarrollo](#desarrollo) a mano, o instala `make` con [Chocolatey](https://chocolatey.org/) (`choco install make`) o [Scoop](https://scoop.sh/).
+
+---
 
 ### macOS
 
-1. Instala Python con [python.org](https://www.python.org/downloads/macos/) o Homebrew: `brew install python@3.12`.
-2. En la carpeta del proyecto:
+#### Terminal (instalador oficial de Python o python.org)
+
+1. Abre **Terminal** (`Aplicaciones → Utilidades`).
+2. En la carpeta del clon:
 
    ```bash
+   cd ~/ruta/a/lexer-generator
    python3 -m venv .venv
    source .venv/bin/activate
    python -m pip install -U pip
    pip install -e ".[dev]"
    ```
 
-3. Graphviz opcional: `brew install graphviz`.
+#### Con Homebrew (opcional)
 
-4. `make` suele estar disponible con las herramientas de línea de comandos de Xcode (`xcode-select --install`).
+Si gestionas Python con [Homebrew](https://brew.sh/):
 
-### Linux (Debian / Ubuntu y derivados)
+```bash
+brew install python@3.12
+# luego crea el venv con la ruta que muestre brew, p. ej.:
+cd ~/ruta/a/lexer-generator
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -U pip
+pip install -e ".[dev]"
+```
+
+- **Graphviz** (opcional): `brew install graphviz`.
+- **Make**: suele estar disponible tras instalar las herramientas de línea de comandos: `xcode-select --install`.
+
+---
+
+### Linux
+
+Los pasos comunes son: paquetes del sistema (Python, `venv`, pip) → `cd` al clon → `python3 -m venv .venv` → `source .venv/bin/activate` → `pip install -e ".[dev]"`.
+
+#### Debian / Ubuntu y derivados (Linux Mint, Pop!_OS, WSL2 Ubuntu, etc.)
 
 ```bash
 sudo apt update
-sudo apt install -y python3 python3-venv python3-pip graphviz build-essential
-cd /ruta/al/lexer-generator
+sudo apt install -y python3 python3-venv python3-pip graphviz build-essential git
+cd ~/ruta/a/lexer-generator
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -U pip
 pip install -e ".[dev]"
 ```
 
-### Linux (Fedora)
+#### Fedora / RHEL / CentOS Stream (con `dnf`)
 
 ```bash
-sudo dnf install -y python3 python3-pip graphviz gcc
+sudo dnf install -y python3 python3-pip graphviz gcc git
+cd ~/ruta/a/lexer-generator
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -U pip
 pip install -e ".[dev]"
 ```
 
-### Linux (Arch)
+#### Arch Linux
 
 ```bash
-sudo pacman -S python python-pip graphviz base-devel
+sudo pacman -S python python-pip graphviz base-devel git
+cd ~/ruta/a/lexer-generator
 python -m venv .venv
 source .venv/bin/activate
 pip install -U pip
 pip install -e ".[dev]"
 ```
 
-### Comprobar que todo funciona
+---
 
-Con el entorno virtual activado, en la raíz del repositorio:
+### Comprobar la instalación
+
+Con el entorno virtual **activado** y estando en la raíz del repositorio:
 
 ```bash
 pytest tests/ -q
 python yalex_cli.py specs/yal/arithmetic_expression.yal -o _test_lexer --no-trees --no-dfa-graph -q
 ```
 
-Opcional: `pre-commit install` para ejecutar Ruff al hacer commit (requiere el extra `[dev]` ya instalado).
+Opcional: `pre-commit install` (hooks de Ruff al hacer `git commit`; requiere `[dev]` instalado).
 
 ## Estructura del proyecto
 
