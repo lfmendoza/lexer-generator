@@ -1,8 +1,18 @@
-(* slr_lexer.yal - A more complete lexer for a simple programming language *)
-(* Demonstrates: let definitions, char ranges, escape sequences, negated classes *)
+(*
+  imperative_core.yal
+
+  Léxico amplio para un lenguaje imperativo de estilo Algol/C/Java: literales
+  numéricos, cadenas entre comillas, identificadores, palabras reservadas,
+  operadores multi-carácter antes que uni-carácter, y comentarios de línea con
+  # (así el lexema // queda disponible para división entera).
+
+  Teoría: cada patrón es regular; la unión priorizada modela el conjunto de
+  lexemas. El orden de reglas fija prefijos ambiguos (p. ej. "==" antes de "=",
+  "**" antes de "*"). Comentarios /* ... */ anidados no son regulares; no se
+  incluyen.
+*)
 
 {
-# Header: imports and setup for the generated lexer
 TOKEN_LIST = []
 }
 
@@ -12,38 +22,52 @@ let id = letter (letter | digit)*
 let number = digit+
 let float_num = digit+ '.' digit+
 let whitespace = [' ' '\t' '\r']+
-let string_char = [^ '"' '\n' '\\']
 
-rule tokens =
+rule tokenize =
     whitespace                    { return None }
   | ['\n']                        { return ('NEWLINE', lxm, line, col) }
-  | "//" [^ '\n']*               { return None }
-  | number                        { return ('INTEGER', int(lxm), line, col) }
+  | '#' [^ '\n']*                 { return None }
   | float_num                     { return ('FLOAT', float(lxm), line, col) }
+  | number                        { return ('INTEGER', int(lxm), line, col) }
+  | '"' [^ '"' '\n']* '"'        { return ('STRING', lxm[1:-1], line, col) }
   | "if"                          { return ('IF', lxm, line, col) }
   | "else"                        { return ('ELSE', lxm, line, col) }
+  | "elif"                        { return ('ELIF', lxm, line, col) }
   | "while"                       { return ('WHILE', lxm, line, col) }
   | "for"                         { return ('FOR', lxm, line, col) }
+  | "break"                       { return ('BREAK', lxm, line, col) }
+  | "continue"                    { return ('CONTINUE', lxm, line, col) }
   | "return"                      { return ('RETURN', lxm, line, col) }
   | "def"                         { return ('DEF', lxm, line, col) }
+  | "class"                       { return ('CLASS', lxm, line, col) }
+  | "import"                      { return ('IMPORT', lxm, line, col) }
+  | "pass"                        { return ('PASS', lxm, line, col) }
   | "print"                       { return ('PRINT', lxm, line, col) }
   | "true"                        { return ('TRUE', lxm, line, col) }
   | "false"                       { return ('FALSE', lxm, line, col) }
+  | "null"                        { return ('NULL', lxm, line, col) }
+  | "void"                        { return ('VOID', lxm, line, col) }
+  | "const"                       { return ('CONST', lxm, line, col) }
+  | "var"                         { return ('VAR', lxm, line, col) }
   | id                            { return ('IDENTIFIER', lxm, line, col) }
+  | "**"                          { return ('POW', lxm, line, col) }
+  | "//"                          { return ('FLOORDIV', lxm, line, col) }
+  | "=="                          { return ('EQ', lxm, line, col) }
+  | "!="                          { return ('NEQ', lxm, line, col) }
+  | "<="                          { return ('LTE', lxm, line, col) }
+  | ">="                          { return ('GTE', lxm, line, col) }
+  | "&&"                          { return ('AND', lxm, line, col) }
+  | "||"                          { return ('OR', lxm, line, col) }
+  | "->"                          { return ('ARROW', lxm, line, col) }
+  | "=>"                          { return ('FATARROW', lxm, line, col) }
   | '+'                           { return ('PLUS', lxm, line, col) }
   | '-'                           { return ('MINUS', lxm, line, col) }
   | '*'                           { return ('TIMES', lxm, line, col) }
   | '/'                           { return ('DIVIDE', lxm, line, col) }
   | '%'                           { return ('MOD', lxm, line, col) }
   | '='                           { return ('ASSIGN', lxm, line, col) }
-  | "=="                          { return ('EQ', lxm, line, col) }
-  | "!="                          { return ('NEQ', lxm, line, col) }
   | '<'                           { return ('LT', lxm, line, col) }
   | '>'                           { return ('GT', lxm, line, col) }
-  | "<="                          { return ('LTE', lxm, line, col) }
-  | ">="                          { return ('GTE', lxm, line, col) }
-  | "&&"                          { return ('AND', lxm, line, col) }
-  | "||"                          { return ('OR', lxm, line, col) }
   | '!'                           { return ('NOT', lxm, line, col) }
   | '('                           { return ('LPAREN', lxm, line, col) }
   | ')'                           { return ('RPAREN', lxm, line, col) }

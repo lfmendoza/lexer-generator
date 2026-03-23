@@ -2,15 +2,26 @@
 
 A lexer generator that reads `.yal` specification files (based on ocamllex/Lex syntax) and produces standalone Python lexical analyzers.
 
-## Project Structure
+## Project layout
 
 ```
-yalex.py              # Main generator (all-in-one)
-ejemplo.yal           # Simple arithmetic lexer spec
-slr_lexer.yal         # Advanced language lexer spec
-test_input.txt        # Sample input for testing
-README.md             # This file
+src/yalex/
+specs/yal/                    # especificaciones léxicas (.yal)
+  arithmetic_expression.yal   # expresiones y asignación (curso / pruebas)
+  imperative_core.yal         # lenguaje imperativo amplio (reservadas, literales, operadores)
+samples/inputs/               # entradas de ejemplo para los lexers generados
+  arithmetic_expressions.txt
+  imperative_core_sample.txt
+yalex_cli.py
+pyproject.toml
+tests/
 ```
+
+```bash
+pip install -e ".[dev]"
+```
+
+Run `yalex`, `python -m yalex`, or `python yalex_cli.py`.
 
 ## How It Works
 
@@ -30,18 +41,23 @@ The pipeline follows standard compiler construction theory:
 ### Step 1: Generate a lexer from a `.yal` file
 
 ```bash
-python yalex.py ejemplo.yal -o my_lexer
+yalex specs/yal/arithmetic_expression.yal -o my_lexer
+# or: python yalex_cli.py specs/yal/arithmetic_expression.yal -o my_lexer
 ```
 
-This produces:
-- `my_lexer.py` — the generated lexer
-- `my_lexer_trees/` — DOT files for each regex expression tree
-- `my_lexer_dfa.dot` — the DFA state diagram
+Genera `my_lexer.py`, `my_lexer_trees/` (DOT de árboles de regex) y `my_lexer_dfa.dot`.
+
+Segundo ejemplo (lenguaje imperativo):
+
+```bash
+yalex specs/yal/imperative_core.yal -o imp_lexer
+python imp_lexer.py samples/inputs/imperative_core_sample.txt
+```
 
 ### Step 2: Run the generated lexer on input
 
 ```bash
-python my_lexer.py test_input.txt
+python my_lexer.py samples/inputs/arithmetic_expressions.txt
 ```
 
 Output:
@@ -71,6 +87,9 @@ dot -Tpng my_lexer_trees/combined.dot -o combined_tree.png
 | `-o NAME` | Output filename (without `.py` extension) |
 | `--no-trees` | Skip expression tree DOT generation |
 | `--no-dfa-graph` | Skip DFA diagram generation |
+| `-v` / `--verbose` | Verbose logging |
+| `-q` / `--quiet` | Minimal output (suppresses `[INFO]` lines from codegen/DOT) |
+| `--trace human` / `json` / `off` | Pipeline trace events (default: off) |
 
 ## YALex Syntax Reference
 
@@ -128,31 +147,28 @@ Actions are Python code blocks enclosed in `{ }`. Available variables inside act
 
 Return `None` to skip the token (e.g., for whitespace). Return any value to emit it as a token.
 
-## Implementation Details
+## Behaviour
 
-### Algorithms Used
+Pipeline: regex AST → Thompson NFA → combined NFA → subset DFA → Hopcroft minimization → emitted lexer. Matching is longest-prefix; on equal length, the earlier rule in the spec wins.
 
-- **Thompson's Construction** — Regex AST → NFA with epsilon transitions
-- **Subset Construction** — NFA → DFA via powerset/epsilon-closure algorithm
-- **Hopcroft's Minimization** — DFA state minimization via partition refinement
-- **Longest Match** — The generated lexer always finds the longest matching prefix
-- **Priority by Order** — On ties, the first rule defined wins
+Evite el nombre de regla `tokens` como punto de entrada (`rule tokens =`): en el código generado entra en conflicto con el atributo `Lexer.tokens` (lista). Use por ejemplo `gettoken`, `tokenize`, etc.
 
-### Lexer Matching Strategy
-
-The generated lexer implements the standard maximal-munch algorithm:
-
-1. Start at the DFA's initial state
-2. Read characters, advancing through the DFA
-3. Track the last accepting state seen (and which rule it belongs to)
-4. When the DFA gets stuck (no valid transition), backtrack to the last accepting state
-5. Execute the corresponding action
-6. Repeat from the new position
+Solo dependencias estándar de Python en el proyecto y en el código generado por YALex.
 
 ## Requirements
 
-- Python 3.7+
-- Graphviz (optional, for rendering DOT files to PNG)
+- Python 3.10+
+- Graphviz (optional, for rendering DOT to PNG)
+
+## Development
+
+```bash
+make install
+make check
+pre-commit install
+```
+
+Without `make` (e.g. Windows): `pip install -e ".[dev]"`, then `ruff check src tests yalex_cli.py`, `mypy src/yalex`, `pytest`.
 
 ## Course Information
 

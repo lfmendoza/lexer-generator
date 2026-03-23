@@ -1,4 +1,12 @@
-(* ejemplo.yal - A simple arithmetic expression lexer *)
+(*
+  arithmetic_expression.yal
+
+  Clasificación léxica para expresiones aritméticas con asignación (alfabeto
+  finito sobre ASCII imprimible). Cada `let` denota un conjunto regular; las
+  reglas se combinan como unión; el analizador generado implementa
+  longest-match (prefijo más largo) y desempate por orden de reglas — modelo
+  estándar en generadores tipo lex/flex/ocamllex (Thompson → DFA → minimización).
+*)
 
 let digit = ['0'-'9']
 let letter = ['a'-'z' 'A'-'Z']

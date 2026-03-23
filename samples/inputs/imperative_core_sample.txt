@@ -1,0 +1,8 @@
+# sample: mix of tokens for imperative_core.yal
+import math
+const pi = 3.14
+var x = 10 ** 2
+if x >= 100 && true != false {
+  print("ok");
+  y = x // 3;
+}
