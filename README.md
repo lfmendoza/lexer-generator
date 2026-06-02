@@ -1,10 +1,9 @@
 # YALex — Yet Another Lex Generator
 
-Generador de analizadores léxicos que lee especificaciones `.yal` (sintaxis inspirada en ocamllex/Lex) y produce analizadores léxicos en Python autónomos.
+Generador de analizadores léxicos a partir de especificaciones `.yal` (estilo ocamllex/Lex) que emiten analizadores en Python (solo biblioteca estándar). [Marco conceptual](#reporte-del-proyecto-marco-conceptual) y [PICO / ArnoldC](#lenguajes-de-referencia-pico-y-arnoldc).
 
 **Repositorio:** [github.com/lfmendoza/lexer-generator](https://github.com/lfmendoza/lexer-generator)
-
-**Guion de presentación (exposición en clase):** [docs/PRESENTACION.md](docs/PRESENTACION.md)
+**Video YOUTUBE:** [https://youtu.be/wqHWkyZgbZ0](https://youtu.be/wqHWkyZgbZ0)
 
 ## Configuración del entorno
 
@@ -204,18 +203,104 @@ Opcional: `pre-commit install` (hooks de Ruff al hacer `git commit`; requiere `[
 
 ```
 src/yalex/
-specs/yal/                    # especificaciones léxicas (.yal)
-  arithmetic_expression.yal   # expresiones y asignación (curso / pruebas)
-  imperative_core.yal         # lenguaje imperativo amplio (reservadas, literales, operadores)
-samples/inputs/               # entradas de ejemplo para los lexers generados
-  arithmetic_expressions.txt
-  imperative_core_sample.txt
+specs/
+  yal/                        # especificaciones léxicas (.yal)
+    arithmetic_expression.yal
+    imperative_core.yal
+    pico.yal                  # PICO (ver SPEC.md)
+    arnoldc.yal               # ArnoldC (ver SPEC-ARNOLDC.md)
+  SPEC.md                     # definición léxica PICO y batería de casos
+  SPEC-ARNOLDC.md             # definición léxica ArnoldC y batería de casos
+samples/
+  README.md                   # criterios del corpus y tabla por especificación
+  inputs/
+    arithmetic_expressions.txt
+    arithmetic_edge_cases.txt
+    arithmetic_comprehensive.txt
+    imperative_core_sample.txt
+    imperative_comprehensive.txt
+    pico/                     # batería PICO (+ invalid_char.pico solo errores)
+    arnoldc/
 yalex_cli.py
 pyproject.toml
 tests/
 ```
 
 Tras [configurar el entorno](#configuración-del-entorno), ejecuta: `yalex`, `python -m yalex` o `python yalex_cli.py`.
+
+## Lenguajes de referencia PICO y ArnoldC
+
+Junto a `arithmetic_expression` e `imperative_core`, hay especificaciones **PICO** y **ArnoldC**: definición en [specs/SPEC.md](specs/SPEC.md) y [specs/SPEC-ARNOLDC.md](specs/SPEC-ARNOLDC.md); `.yal` en `specs/yal/pico.yal` y `arnoldc.yal`.
+
+### Comportamiento del analizador generado
+
+| Aspecto | Realización |
+|---------|-------------|
+| Prefijo más largo y orden de reglas | Un AFD; a igual longitud gana la regla que aparece **antes** en el `.yal`. |
+| Regex | `* + ? \|`, `[]`, `[^…]`, `#` entre operandos que son conjuntos finitos de caracteres. |
+| `eof` | Tras leer todo el texto se evalúa la regla `eof`; suele usarse `raise EOFError(...)`. |
+| Sin token | `return lexbuf` en el `.yal` se emite como `return None`. |
+| Error léxico | `LexerError`, stderr, código ≠ 0. |
+| AST en DOT | Por defecto `yalex` crea `*_trees/` (`def_*.dot`, `rule_*.dot`, `combined.dot`). PNG opcional con Graphviz. |
+| AFD | `*_dfa.dot` salvo `--no-dfa-graph`. |
+
+En los `.yal` de ejemplo las acciones devuelven tuplas `(tipo, lxm, line, col)`. Pruebas: `pytest tests/test_core_lexer_semantics.py`.
+
+**Uso:**
+
+```bash
+yalex specs/yal/pico.yal -o pico_lexer
+python pico_lexer.py samples/inputs/pico/hello.pico
+python pico_lexer.py samples/inputs/pico/invalid_char.pico   # error léxico esperado
+
+yalex specs/yal/arnoldc.yal -o arnoldc_lexer
+python arnoldc_lexer.py samples/inputs/arnoldc/hello.arnoldc
+```
+
+Pruebas: `pytest tests/test_core_lexer_semantics.py`, `tests/test_reference_languages.py`, `tests/test_sample_corpus.py`.
+
+## Reporte del proyecto (marco conceptual)
+
+Teoría de compiladores y lenguajes formales aplicada a YALex. [Guion de presentación](docs/PRESENTACION.md).
+
+### Análisis léxico y papel en el compilador
+
+El **análisis léxico** (o *scanning*) es la primera fase habitual del **front-end** de un compilador o intérprete. Su función es leer la **cadena de entrada** carácter a carácter (con lookahead controlado) y agrupar caracteres contiguos en **lexemas**: unidades que coinciden con los patrones del lenguaje fuente. Cada lexema se **clasifica** mediante un **componente léxico** o **token** (categoría sintáctica léxica más, si aplica, un **valor** o *lexeme attribute*, por ejemplo el entero concreto para un literal numérico). La salida del analizador léxico es una **secuencia ordenada de tokens** que alimenta al **analizador sintáctico** (*parser*). El análisis léxico **no** demuestra que el programa sea sintácticamente correcto: solo garantiza que el texto se puede **segmentar** según la especificación léxica.
+
+### Definiciones regulares, expresiones regulares y autómatas finitos
+
+Una **definición regular** es una descripción **declarativa** de un lenguaje formal **tipo 3** en la jerarquía de Chomsky: se construye a partir de lenguajes finitos, **unión**, **concatenación** y **clausura de Kleene** (y variantes como clausura positiva u opcional). Las **expresiones regulares** son la notación compacta habitual para esas definiciones. El **teorema de Kleene** establece la **equivalencia** entre lenguajes regulares, expresiones regulares y lenguajes reconocidos por **autómatas finitos**. En la práctica de compiladores, los patrones de tokens suelen ser regulares; por ello es posible **compilar** cada patrón a un **autómata finito** y ejecutar el reconocimiento en tiempo lineal respecto al tamaño de la entrada.
+
+### Especificación léxica y generador de analizadores
+
+Una **especificación léxica** fija, para un lenguaje fuente concreto, qué secuencias de caracteres constituyen tokens válidos (y a veces qué fragmentos se **ignoran**, como espacios o comentarios). En YALex, esa especificación se escribe en archivos **`.yal`**: definiciones auxiliares (`let`) y reglas `rule` que emparejan una **expresión regular** con una **acción** en Python (lo que se devuelve al reconocer el lexema).
+
+Un **generador de analizadores léxicos** (*lexer generator*) es una herramienta de **traducción dirigida por especificación**: toma una descripción de alto nivel de los tokens y produce un **programa ejecutable** (aquí, en Python) que implementa el reconocedor. YALex encaja en esta categoría: actúa como un **compilador del compilador léxico** —traduce la especificación `.yal` a tablas y código que materializan el autómata.
+
+### Arquitectura interna de YALex (resumen teórico)
+
+El pipeline implementado conecta los conceptos estándar del curso:
+
+| Etapa | Idea teórica | Rol en YALex |
+|-------|----------------|--------------|
+| Parseo del `.yal` | Gramática del metalenguaje de especificación | Construcción de una representación interna (definiciones y reglas) |
+| Regex → AST | Árbol de expresión regular | Representación explícita de la definición regular de cada patrón (exportable a DOT) |
+| AST → AFN | Construcción de Thompson | Autómata finito no determinista para cada patrón |
+| Unión y AFD | Cerradura-ε, construcción por subconjuntos | Un solo autómata determinista para escanear con una pasada |
+| Minimización | Refinamiento de particiones sobre estados | Reducción de estados del AFD |
+| Emisión de código | Traducción a representación ejecutable | Tablas de transición + acciones del usuario |
+
+La política de coincidencia es **prefijo más largo** (*longest match*): ante varias reglas aplicables, se prefiere el lexema más largo; ante empate en longitud, prevalece el **orden** de las reglas en el archivo `.yal`.
+
+### Alcance
+
+Incluye: especificación → AFN/AFD → lexer en Python; DOT de árboles y AFD; salida de tokens y `--pretty`. No incluye parser, semántica ni codegen de máquina. Una entrada puede tokenizarse bien y ser inválida sintácticamente después.
+
+### Resumen
+
+YALex compila `.yal` a un AFD minimizado y a un `.py` que escanea texto y devuelve tokens.
+
+---
 
 ## Cómo funciona YALex (visión general)
 
@@ -251,7 +336,7 @@ flowchart TB
 
 1. Lee el `.yal` (cabecera, `let`, reglas `rule`, trailer).
 2. Parsea cada regex a un AST.
-3. Construye AFN (Thompson), los une, obtiene AFD (subconjuntos), minimiza (Hopcroft).
+3. Construye AFN (Thompson), los une, obtiene AFD (subconjuntos), minimiza (refinamiento de particiones).
 4. Escribe un `.py` con tablas del AFD y el código de acciones que definiste.
 5. Opcionalmente escribe **DOT** para visualizar árboles de regex y el AFD.
 

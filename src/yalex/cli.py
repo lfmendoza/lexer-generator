@@ -22,7 +22,7 @@ def main(argv: list[str] | None = None) -> None:
         default=None,
         help="Output lexer filename (without extension)",
     )
-    parser.add_argument("--no-trees", action="store_true", help="Skip expression tree generation")
+    parser.add_argument("--no-trees", action="store_true", help="No escribir *_trees/*.dot")
     parser.add_argument("--no-dfa-graph", action="store_true", help="Skip DFA diagram generation")
     parser.add_argument("-v", "--verbose", action="store_true", help="Verbose logging")
     parser.add_argument("-q", "--quiet", action="store_true", help="Minimal output")

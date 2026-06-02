@@ -1,0 +1,11 @@
+-- Mezcla deliberada: literales mixtos, operadores de dos caracteres, prioridad float/int
+-- y palabras reservadas adyacentes a identificadores (macro vs macro_foo).
+let epsilon <- 0.0001;
+let macro_foo <- 1;
+let cmp <- (a <= b) && (c >= d) || (e != f) && (g == h);
+let chain <- true && false || true;
+macro tiny() {
+    emit 0;
+}
+let whenish <- 2;
+emit whenish;

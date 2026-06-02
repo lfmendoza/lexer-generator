@@ -18,16 +18,6 @@ from yalex.regex_ast import (
 
 
 class RegexParser:
-    """
-    Parses YALex regex syntax into AST nodes.
-
-    Precedence (low to high):
-        |  (union)
-        concat
-        * + ?
-        # (set difference)
-    """
-
     def __init__(self, text: str, definitions: dict[str, str]) -> None:
         self.text = text
         self.pos = 0

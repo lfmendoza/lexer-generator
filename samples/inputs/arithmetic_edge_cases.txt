@@ -1,0 +1,14 @@
+a1 = 0
+b2c3 = 1a + 2
+x = (((((42))))))
+y	=	3	+	4
+z=
+5
+minus = -9
+longnameabcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 = 1
+deep = (((((((((1 + 2) * 3) - 4) / 5) + 6) * 7) - 8) / 9))
+chain = 1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 + 9 + 10
+mix = a1 + 2 * b2c3 - (longnameabcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 / 3)
+solo = 0
+edge = 1a
+zero = 0001

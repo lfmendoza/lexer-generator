@@ -2,8 +2,16 @@
 
 from __future__ import annotations
 
+import re
+
 from yalex.dfa import DFAState
 from yalex.spec_parser import YALexSpec
+
+_LEXBUF_SKIP = re.compile(r"\breturn\s+lexbuf\b")
+
+
+def _normalize_lexer_action(action: str) -> str:
+    return _LEXBUF_SKIP.sub("return None", action.strip())
 
 
 def generate_lexer(
@@ -29,9 +37,10 @@ def generate_lexer(
     action_cases = []
     for i, action in enumerate(actions):
         if action:
-            action_cases.append(f"        if rule_index == {i}:\n            {action}")
+            body = _normalize_lexer_action(action)
+            action_cases.append(f"        if rule_index == {i}:\n            {body}")
         else:
-            action_cases.append(f"        if rule_index == {i}:\n            pass  # no action")
+            action_cases.append(f"        if rule_index == {i}:\n            pass")
 
     action_dispatch = "\n".join(action_cases)
 
@@ -55,13 +64,15 @@ _START_STATE = {dfa_start}
 
 
 class LexerError(Exception):
-    def __init__(self, char, line, col):
-        self.char = char
+    def __init__(self, line, col, char):
         self.line = line
         self.col = col
-        super().__init__(
-            f"Lexical error: unexpected character '{{char}}' at line {{line}}, column {{col}}"
+        self.char = char
+        msg = (
+            "LEXICAL ERROR at line {{}}, column {{}}: "
+            "Unrecognized character {{!r}}".format(line, col, char)
         )
+        super().__init__(msg)
 
 
 class Lexer:
@@ -73,36 +84,32 @@ class Lexer:
         self.tokens = []
 
     def {spec.entrypoint}(self):
-        """Main lexer entry point. Returns list of tokens."""
         while self.pos < len(self.text):
+            token = self._next_token()
+            if token is not None:
+                self.tokens.append(token)
+        if self.pos == len(self.text):
             token = self._next_token()
             if token is not None:
                 self.tokens.append(token)
         return self.tokens
 
     def _next_token(self):
-        """Find the longest match from current position."""
-        if self.pos >= len(self.text):
-            return None
-
         state = _START_STATE
         last_accept_pos = -1
         last_accept_rule = -1
         current_pos = self.pos
 
         while current_pos <= len(self.text):
-            # Check if current state is accepting
             if state in _ACCEPT_TABLE:
                 last_accept_pos = current_pos
                 last_accept_rule = _ACCEPT_TABLE[state]
 
-            # Try to advance
             if current_pos >= len(self.text):
-                # Check EOF transition (-1)
                 trans = _TRANS_TABLE.get(state, {{}})
                 if -1 in trans:
                     state = trans[-1]
-                    current_pos += 1  # conceptual advance past EOF
+                    current_pos += 1
                     if state in _ACCEPT_TABLE:
                         last_accept_pos = current_pos
                         last_accept_rule = _ACCEPT_TABLE[state]
@@ -118,10 +125,9 @@ class Lexer:
 
         if last_accept_rule >= 0 and last_accept_pos > self.pos:
             lexeme = self.text[self.pos:last_accept_pos]
-            lxm = lexeme  # alias used in actions
-            lexbuf = None  # placeholder
+            lxm = lexeme
+            lexbuf = None
 
-            # Update line/col tracking
             start_line = self.line
             start_col = self.col
             for ch in lexeme:
@@ -134,36 +140,24 @@ class Lexer:
             self.pos = last_accept_pos
             rule_index = last_accept_rule
 
-            # Execute action
             result = self._execute_action(rule_index, lexeme, lxm, start_line, start_col)
             return result
         elif last_accept_rule >= 0 and last_accept_pos == self.pos:
-            # Zero-length match (e.g. optional), skip
             self.pos += 1
             return None
         else:
-            # No match: lexical error
+            if self.pos >= len(self.text):
+                return None
             bad_char = self.text[self.pos]
-            err = LexerError(bad_char, self.line, self.col)
-            print(f"ERROR: {{err}}", file=sys.stderr)
-            # Skip the bad character and continue
-            if bad_char == '\\n':
-                self.line += 1
-                self.col = 1
-            else:
-                self.col += 1
-            self.pos += 1
-            return None
+            raise LexerError(self.line, self.col, bad_char)
 
     def _execute_action(self, rule_index, lexeme, lxm, line, col):
-        """Dispatch to the appropriate action for the matched rule."""
-        lexbuf = self  # so actions can reference lexbuf
+        lexbuf = self
 {action_dispatch}
         return None
 
 
 def _lexical_alignment_view(text, tokens_list):
-    """Muestra cada línea del fuente y la secuencia de tipos de token (p. ej. ID + ID)."""
     lines = text.splitlines()
     usable = [
         t
@@ -212,7 +206,13 @@ def main():
         text = f.read()
 
     lexer = Lexer(text)
-    tokens = lexer.{spec.entrypoint}()
+    try:
+        tokens = lexer.{spec.entrypoint}()
+    except EOFError:
+        tokens = lexer.tokens
+    except LexerError as e:
+        print(str(e), file=sys.stderr)
+        sys.exit(1)
 
     print("=== TOKENS ===")
     for tok in tokens:

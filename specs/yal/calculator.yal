@@ -1,0 +1,26 @@
+(*
+  calculator.yal
+
+  Clasificación léxica para la gramática de calculadora con llamadas a función
+  (calculator.yalp). Extiende arithmetic_expression.yal añadiendo la coma como
+  separador de argumentos y descartando saltos de línea — el parser no los consume.
+*)
+
+let digit = ['0'-'9']
+let letter = ['a'-'z' 'A'-'Z']
+let id = letter (letter | digit)*
+let number = digit+
+let whitespace = [' ' '\t']+
+
+rule gettoken =
+    whitespace          { return None }
+  | ['\n']              { return None }
+  | number              { return ('NUMBER', int(lxm), line, col) }
+  | id                  { return ('ID', lxm, line, col) }
+  | '+'                 { return ('PLUS', lxm, line, col) }
+  | '-'                 { return ('MINUS', lxm, line, col) }
+  | '*'                 { return ('TIMES', lxm, line, col) }
+  | '/'                 { return ('DIV', lxm, line, col) }
+  | '('                 { return ('LPAREN', lxm, line, col) }
+  | ')'                 { return ('RPAREN', lxm, line, col) }
+  | ','                 { return ('COMMA', lxm, line, col) }

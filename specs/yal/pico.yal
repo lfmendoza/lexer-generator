@@ -1,0 +1,70 @@
+(* pico.yal — PICO; SPEC.md *)
+
+{
+}
+
+let digit      = ['0'-'9']
+let nonzero    = ['1'-'9']
+let letter     = ['a'-'z' 'A'-'Z']
+let alphanum   = letter | digit | '_'
+
+let int_lit    = '0' | nonzero digit*
+let float_lit  = int_lit '.' digit+
+
+let str_char   = [^ '"' '\n' '\\'] | '\\' _
+let string_lit = '"' str_char* '"'
+
+let ident      = letter alphanum*
+
+let line_cmt   = '-' '-' [^ '\n']* '\n'
+
+rule gettoken =
+
+    [' ' '\t' '\n' '\r']          { return lexbuf }
+
+  | line_cmt                      { return lexbuf }
+
+  | float_lit                     { return ('FLOAT_LIT', lxm, line, col) }
+
+  | int_lit                       { return ('INT_LIT', lxm, line, col) }
+
+  | string_lit                    { return ('STRING_LIT', lxm, line, col) }
+
+  | "true"                        { return ('BOOL_LIT', lxm, line, col) }
+  | "false"                       { return ('BOOL_LIT', lxm, line, col) }
+
+  | "macro"                       { return ('KW_MACRO', lxm, line, col) }
+  | "emit"                        { return ('KW_EMIT', lxm, line, col) }
+  | "when"                        { return ('KW_WHEN', lxm, line, col) }
+  | "otherwise"                   { return ('KW_OTHERWISE', lxm, line, col) }
+  | "repeat"                      { return ('KW_REPEAT', lxm, line, col) }
+  | "until"                       { return ('KW_UNTIL', lxm, line, col) }
+  | "let"                         { return ('KW_LET', lxm, line, col) }
+
+  | ident                         { return ('IDENT', lxm, line, col) }
+
+  | "<-"                          { return ('ASSIGN', lxm, line, col) }
+  | "=="                          { return ('EQ', lxm, line, col) }
+  | "!="                          { return ('NEQ', lxm, line, col) }
+  | "<="                          { return ('LEQ', lxm, line, col) }
+  | ">="                          { return ('GEQ', lxm, line, col) }
+  | "&&"                          { return ('AND', lxm, line, col) }
+  | "||"                          { return ('OR', lxm, line, col) }
+
+  | '+'                           { return ('PLUS', lxm, line, col) }
+  | '-'                           { return ('MINUS', lxm, line, col) }
+  | '*'                           { return ('TIMES', lxm, line, col) }
+  | '/'                           { return ('DIV', lxm, line, col) }
+  | '%'                           { return ('MOD', lxm, line, col) }
+  | '<'                           { return ('LT', lxm, line, col) }
+  | '>'                           { return ('GT', lxm, line, col) }
+  | '!'                           { return ('NOT', lxm, line, col) }
+
+  | '('                           { return ('LPAREN', lxm, line, col) }
+  | ')'                           { return ('RPAREN', lxm, line, col) }
+  | '{'                           { return ('LBRACE', lxm, line, col) }
+  | '}'                           { return ('RBRACE', lxm, line, col) }
+  | ';'                           { return ('SEMICOLON', lxm, line, col) }
+  | ','                           { return ('COMMA', lxm, line, col) }
+
+  | eof                           { raise EOFError('End of input') }

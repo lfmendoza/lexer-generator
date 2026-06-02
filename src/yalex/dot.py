@@ -24,9 +24,18 @@ from yalex.regex_parser import RegexParser
 from yalex.spec_parser import YALexSpec
 
 
+def _dot_escape(s: str) -> str:
+    return s.replace("\\", "\\\\").replace('"', '\\"')
+
+
 def ast_to_dot(node: RegexNode, name: str = "expression_tree") -> str:
     """Generate Graphviz DOT representation of a regex AST."""
-    lines = ["digraph {", f'  label="{name}";', "  node [shape=circle];"]
+    title = _dot_escape(name)
+    lines = [
+        "digraph ExprTree {",
+        f'  graph [rankdir=TB, labelloc=t, fontsize=11, label="{title}"];',
+        "  node [shape=circle];",
+    ]
     counter = [0]
 
     def _visit(n: RegexNode) -> int:

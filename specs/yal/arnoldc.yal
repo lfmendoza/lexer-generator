@@ -1,0 +1,64 @@
+(* arnoldc.yal — ArnoldC; SPEC-ARNOLDC.md *)
+
+{
+}
+
+let digit     = ['0'-'9']
+let lower     = ['a'-'z']
+let upper     = ['A'-'Z']
+let ident     = lower (lower | digit | '_')*
+
+let int_lit   = '-'? digit+
+
+let str_char  = [^ '"' '\n' '\\'] | '\\' _
+let str_lit   = '"' str_char* '"'
+
+rule gettoken =
+
+    [' ' '\t' '\n' '\r']                                      { return lexbuf }
+
+  | "@NO PROBLEMO"                                            { return ('KW_TRUE', lxm, line, col) }
+  | "@I LIED"                                                 { return ('KW_FALSE', lxm, line, col) }
+
+  | "IT'S SHOWTIME"                                           { return ('KW_MAIN_START', lxm, line, col) }
+  | "YOU HAVE BEEN TERMINATED"                                { return ('KW_MAIN_END', lxm, line, col) }
+
+  | "TALK TO THE HAND"                                        { return ('KW_PRINT', lxm, line, col) }
+
+  | "HEY CHRISTMAS TREE"                                      { return ('KW_DECLARE', lxm, line, col) }
+  | "YOU SET US UP"                                           { return ('KW_INIT', lxm, line, col) }
+
+  | "GET TO THE CHOPPER"                                      { return ('KW_ASSIGN_START', lxm, line, col) }
+  | "HERE IS MY INVITATION"                                   { return ('KW_ASSIGN_INIT', lxm, line, col) }
+  | "ENOUGH TALK"                                             { return ('KW_ASSIGN_END', lxm, line, col) }
+
+  | "GET UP"                                                  { return ('KW_PLUS', lxm, line, col) }
+  | "GET DOWN"                                                { return ('KW_MINUS', lxm, line, col) }
+  | "YOU'RE FIRED"                                            { return ('KW_TIMES', lxm, line, col) }
+  | "HE HAD TO SPLIT"                                         { return ('KW_DIV', lxm, line, col) }
+
+  | "YOU ARE NOT YOU YOU ARE ME"                              { return ('KW_EQ', lxm, line, col) }
+  | "LET OFF SOME STEAM BENNET"                               { return ('KW_GT', lxm, line, col) }
+  | "CONSIDER THAT A DIVORCE"                                 { return ('KW_OR', lxm, line, col) }
+  | "KNOCK KNOCK"                                             { return ('KW_AND', lxm, line, col) }
+
+  | "BECAUSE I'M GOING TO SAY PLEASE"                         { return ('KW_IF', lxm, line, col) }
+  | "BULLSHIT"                                                { return ('KW_ELSE', lxm, line, col) }
+  | "YOU HAVE NO RESPECT FOR LOGIC"                           { return ('KW_ENDIF', lxm, line, col) }
+
+  | "STICK AROUND"                                            { return ('KW_WHILE', lxm, line, col) }
+  | "CHILL"                                                   { return ('KW_ENDWHILE', lxm, line, col) }
+
+  | "LISTEN TO ME VERY CAREFULLY"                             { return ('KW_METHOD_DEF', lxm, line, col) }
+  | "I NEED YOUR CLOTHES YOUR BOOTS AND YOUR MOTORCYCLE"      { return ('KW_METHOD_ARG', lxm, line, col) }
+  | "GIVE THESE PEOPLE AIR"                                   { return ('KW_METHOD_NONVOID', lxm, line, col) }
+  | "HASTA LA VISTA, BABY"                                    { return ('KW_METHOD_END', lxm, line, col) }
+  | "I'LL BE BACK"                                            { return ('KW_RETURN', lxm, line, col) }
+  | "GET YOUR ASS TO MARS"                                    { return ('KW_CALL_ASSIGN', lxm, line, col) }
+  | "DO IT NOW"                                               { return ('KW_CALL_VOID', lxm, line, col) }
+
+  | str_lit                                                   { return ('STRING_LIT', lxm, line, col) }
+  | int_lit                                                   { return ('INT_LIT', lxm, line, col) }
+  | ident                                                     { return ('IDENT', lxm, line, col) }
+
+  | eof                                                       { raise EOFError('End of input') }

@@ -1,0 +1,80 @@
+# stress: reserved words, multi-char operators, floats before ints, comments
+import math
+import sys
+const pi = 3.14159265
+const e = 2.71828
+var x = 10
+var y = 20
+var z = 0.0
+# float must win over integer prefix
+var f1 = 3.14
+var f2 = 10.0
+var f3 = 0.001
+# power vs multiply: ** before *
+var p = 2 ** 10
+var q = 2 * 3 ** 4
+var r = (2 ** 3) ** 2
+# floor div vs divide: // before /
+var fd = 100 // 3
+var dv = 100 / 3
+var mix = x // 2 + y / 3
+# comparisons and equality
+if x == y && y != z {}
+if x <= y || y >= x {}
+if x < y && y > x {}
+if !true != false {}
+# arrows
+var fn = 0
+fn = a -> b
+fn = c => d
+# brackets and delimiters
+arr = [1, 2, 3];
+obj = {a: 1, b: 2};
+# keywords vs identifiers: ifx is not "if"
+ifx = 1
+elsewhere = 2
+whiletrue = 3
+forloop = 4
+returned = 5
+definitely = 6
+classroom = 7
+nullable = null
+voidptr = void
+passing = pass
+printing = print
+trueish = true
+falseish = false
+# elif path
+if x == 1 {
+} elif x == 2 {
+} else {
+}
+# break continue return
+while x > 0 {
+  break;
+  continue;
+  return 0;
+}
+for i in x {
+  print("loop");
+}
+def foo(a, b) {
+  return a + b;
+}
+class Bar {
+  var m = 0;
+}
+# strings
+var s1 = "hello"
+var s2 = "world"
+var s3 = ""
+# string cannot span line; keep one line
+var s4 = "mixed ops: ** // == != <= >= && || -> =>"
+# more operators in one expression
+var expr = (a + b) * (c - d) / (e % f) + g ** h - i // j
+# punctuation density
+a,b,c;d:e;f,g,h;
+# tabs and spaces
+	ws	=	1	+	2
+# trailing logic
+var end = 1

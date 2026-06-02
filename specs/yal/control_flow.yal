@@ -1,0 +1,21 @@
+(*
+  control_flow.yal
+
+  Clasificación léxica para la gramática de control de flujo con conflicto
+  dangling-else (conflict_demo.yalp).
+
+  Las palabras reservadas if, then, else deben aparecer ANTES de la regla
+  general de identificadores para que longest-match las tome primero.
+  Cualquier otro identificador se clasifica como STMT (marcador de sentencia).
+*)
+
+let letter = ['a'-'z' 'A'-'Z']
+let digit  = ['0'-'9']
+let id     = letter (letter | digit)*
+
+rule gettoken =
+    [' ' '\t' '\n']     { return None }
+  | "if"                { return ('IF',   lxm, line, col) }
+  | "then"              { return ('THEN', lxm, line, col) }
+  | "else"              { return ('ELSE', lxm, line, col) }
+  | id                  { return ('STMT', lxm, line, col) }

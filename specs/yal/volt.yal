@@ -1,0 +1,76 @@
+(* volt.yal -- YALex specification for the VOLT language *)
+
+{
+(* Generated lexer for VOLT -- sigil-typed, postfix-operator language *)
+}
+
+(* -- Base character classes ----------------------------------------- *)
+
+let digit    = ['0'-'9']
+let nonzero  = ['1'-'9']
+let lower    = ['a'-'z']
+let alphanum = lower | digit | '_'
+
+let int_lit  = ('~'? '0') | ('~'? nonzero digit*)
+let sq_char  = [^ '\'' '\n' '\\'] | '\\' _
+let str_lit  = '\'' sq_char* '\''
+let ident    = lower alphanum*
+let line_cmt = '~' '~' [^ '\n']* '\n'
+
+(* ================================================================== *)
+
+rule gettoken =
+
+    [' ' '\t' '\n' '\r']          { return None }
+  | line_cmt                      { return None }
+
+  | '$' ident                     { return ('INT_VAR',  lxm, line, col) }
+  | '#' ident                     { return ('BOOL_VAR', lxm, line, col) }
+  | '@' ident                     { return ('STR_VAR',  lxm, line, col) }
+
+  | "yes"                         { return ('BOOL_LIT', lxm, line, col) }
+  | "no"                          { return ('BOOL_LIT', lxm, line, col) }
+
+  | "ADD"                         { return ('OP_ADD',   lxm, line, col) }
+  | "SUB"                         { return ('OP_SUB',   lxm, line, col) }
+  | "MUL"                         { return ('OP_MUL',   lxm, line, col) }
+  | "DIV"                         { return ('OP_DIV',   lxm, line, col) }
+  | "MOD"                         { return ('OP_MOD',   lxm, line, col) }
+
+  | "NEQ"                         { return ('CMP_NEQ',  lxm, line, col) }
+  | "LTE"                         { return ('CMP_LTE',  lxm, line, col) }
+  | "GTE"                         { return ('CMP_GTE',  lxm, line, col) }
+  | "EQ"                          { return ('CMP_EQ',   lxm, line, col) }
+  | "LT"                          { return ('CMP_LT',   lxm, line, col) }
+  | "GT"                          { return ('CMP_GT',   lxm, line, col) }
+
+  | "AND"                         { return ('BOOL_AND', lxm, line, col) }
+  | "OR"                          { return ('BOOL_OR',  lxm, line, col) }
+  | "NOT"                         { return ('BOOL_NOT', lxm, line, col) }
+
+  | "zap"                         { return ('KW_ZAP',   lxm, line, col) }
+  | "check"                       { return ('KW_CHECK', lxm, line, col) }
+  | "nope"                        { return ('KW_NOPE',  lxm, line, col) }
+  | "done"                        { return ('KW_DONE',  lxm, line, col) }
+  | "loop"                        { return ('KW_LOOP',  lxm, line, col) }
+  | "stop"                        { return ('KW_STOP',  lxm, line, col) }
+  | "volt"                        { return ('KW_VOLT',  lxm, line, col) }
+  | "end"                         { return ('KW_END',   lxm, line, col) }
+  | "give"                        { return ('KW_GIVE',  lxm, line, col) }
+  | "wire"                        { return ('KW_WIRE',  lxm, line, col) }
+
+  | int_lit                       { return ('INT_LIT',  lxm, line, col) }
+  | str_lit                       { return ('STR_LIT',  lxm, line, col) }
+
+  | '='                           { return ('ASSIGN',    lxm, line, col) }
+  | '('                           { return ('LPAREN',    lxm, line, col) }
+  | ')'                           { return ('RPAREN',    lxm, line, col) }
+  | '['                           { return ('LBRACKET',  lxm, line, col) }
+  | ']'                           { return ('RBRACKET',  lxm, line, col) }
+  | ';'                           { return ('SEMICOLON', lxm, line, col) }
+  | ':'                           { return ('COLON',     lxm, line, col) }
+  | ','                           { return ('COMMA',     lxm, line, col) }
+
+  | ident                         { return ('IDENT',     lxm, line, col) }
+
+  | eof                           { raise EOFError('End of input') }
